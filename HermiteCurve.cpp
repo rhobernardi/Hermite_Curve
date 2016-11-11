@@ -11,6 +11,7 @@ int nPts = 2; // Número de pontos da reta, P0 e P1.
 int N = nPts-1;
 int contPoints = 0;
 int HermiteMatrix[4][4];
+bool flag = false;
 
 //Classe "Point".
 class Point
@@ -89,46 +90,39 @@ void drawLineVector(Point p1, Point p2)
 }
 
 
-void calculateVelLine(Point p1, Point p2)
+void calculateSpeedVectors(Point p1, Point p2)
 {
 	float dx = (float)abs(p1.x-p2.x);
 	float dy = (float)abs(p1.y-p2.y);
 
+	if (contPoints == 2)
+	{
+		dx = dx/3;
+		dy = dy/3;
+	}
+
 	float vx1, vx2, vy1, vy2;
 
 	if (p1.x < p2.x) {
-		vx1 = (float)p1.x + (dx/3);
-		vx2 = (float)p2.x - (dx/3);
+		vx1 = (float)p1.x + (dx);
+		vx2 = (float)p2.x - (dx);
 	} else {
-		vx1 = (float)p1.x - (dx/3);
-		vx2 = (float)p2.x + (dx/3);
+		vx1 = (float)p1.x - (dx);
+		vx2 = (float)p2.x + (dx);
 	}
 
 	if (p1.y < p2.y) {
-		vy1 = (float)p1.y + (dy/3);
-		vy2 = (float)p2.y - (dy/3);
+		vy1 = (float)p1.y + (dy);
+		vy2 = (float)p2.y - (dy);
 	} else {
-		vy1 = (float)p1.y - (dy/3);
-		vy2 = (float)p2.y + (dy/3);
+		vy1 = (float)p1.y - (dy);
+		vy2 = (float)p2.y + (dy);
 	}
-
-	// cout << "p1.x: " << p1.x << "\tp2.x: " << p2.x << endl;
-	// cout << "p1.y: " << p1.y << "\tp2.y: " << p2.y << "\n" << endl;
-
-	// cout << "dx: " << dx/3 << endl;
-	// cout << "dy: " << dy/3 << "\n" << endl;
-
-	// cout << "v1.x: " << vx1 << "\tv2.x: " << vx2 << endl;
-	// cout << "v1.y: " << vy1 << "\tv2.y: " << vy2 << "\n" << endl;
 
 	PtsDeControle[2].setxy((float) vx1, (float) vy1);
 	PtsDeControle[3].setxy((float) vx2, (float) vy2);
 
-	drawDot(PtsDeControle[2].x, PtsDeControle[2].y);
-	drawDot(PtsDeControle[3].x, PtsDeControle[3].y);
-
-	drawLineVector(PtsDeControle[0], PtsDeControle[2]);
-	drawLineVector(PtsDeControle[1], PtsDeControle[3]);
+	glutPostRedisplay();
 }
 
 
@@ -152,14 +146,13 @@ Point *partialResult(Point *PT)
 void drawHermiteCurve(Point *PT, double u)
 {
 	Point *P = (Point *) calloc(4, sizeof(Point));
-	//P.x = 0; P.y = 0;
 
 	Point *ParRes = partialResult(PT);
 
 	for (int k = 0; k < 4; ++k)
 	{
-		P[k].x += 1*ParRes[0].x + u*ParRes[1].x + pow(u,2)*ParRes[2].x + pow(u,3)*ParRes[3].x; //binomio_coef(N,k)*pow((1-u),N-k)*pow(u,k)*PT[k].x;
-		P[k].y += 1*ParRes[0].y + u*ParRes[1].y + pow(u,2)*ParRes[2].y + pow(u,3)*ParRes[3].y;//P.y += binomio_coef(N,k)*pow((1-u),N-k)*pow(u,k)*PT[k].y;
+		P[k].x += 1*ParRes[0].x + u*ParRes[1].x + pow(u,2)*ParRes[2].x + pow(u,3)*ParRes[3].x; 
+		P[k].y += 1*ParRes[0].y + u*ParRes[1].y + pow(u,2)*ParRes[2].y + pow(u,3)*ParRes[3].y;
 	}
 
 	for (int i = 0; i < 4; ++i)
@@ -169,9 +162,90 @@ void drawHermiteCurve(Point *PT, double u)
 }
 
 
-void mouseClickEvent(int button, int state, int x, int y)
+void keyPressedEvent(unsigned char key, int x, int y)
 {
-	if(button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) 
+// V0 => velocidade de P0
+	if (key == 'w') // aumenta a velocidade V0
+	{
+		float dx = (float)abs(PtsDeControle[0].x - PtsDeControle[2].x);
+		float dy = (float)abs(PtsDeControle[0].y - PtsDeControle[2].y);
+		
+		PtsDeControle[2].x += dx*0.05;
+		PtsDeControle[2].y += dy*0.05;
+		
+		glutPostRedisplay();
+	}
+
+	if (key == 'a') // rotaciona em sentido anti-horario a velocidade V0
+	{
+		//PtsDeControle[2].x += 3;
+		//PtsDeControle[2].y += 3;
+
+		//glTranslated(PtsDeControle[0].x, PtsDeControle[0].y, 0);
+		//glRotatef(0.0f, 0.0f, 30.0f, 1.0f);
+		//glTranslated(-PtsDeControle[0].x, -PtsDeControle[0].y, 0);
+
+		glutPostRedisplay();
+	}
+
+	if (key == 's') // diminui a velocidade V0
+	{
+		float dx = (float)abs(PtsDeControle[0].x - PtsDeControle[2].x);
+		float dy = (float)abs(PtsDeControle[0].y - PtsDeControle[2].y);
+		
+		PtsDeControle[2].x -= dx*0.05;
+		PtsDeControle[2].y -= dy*0.05;
+
+		glutPostRedisplay();
+	}
+
+	if (key == 'd') // rotaciona em sentido horario a velocidade V0
+	{
+		
+	}
+
+
+// V0 => velocidade de P1
+	if (key == 'i') // aumenta a velocidade V1
+	{
+		float dx = (float)abs(PtsDeControle[0].x - PtsDeControle[2].x);
+		float dy = (float)abs(PtsDeControle[0].y - PtsDeControle[2].y);
+		
+		PtsDeControle[3].x += dx*0.05;
+		PtsDeControle[3].y += dy*0.05;
+		
+		glutPostRedisplay();
+	}
+
+	if (key == 'j') // rotaciona em sentido anti-horario a velocidade V1
+	{
+
+	}
+
+	if (key == 'k') // diminui a velocidade V1
+	{
+		float dx = (float)abs(PtsDeControle[0].x - PtsDeControle[2].x);
+		float dy = (float)abs(PtsDeControle[0].y - PtsDeControle[2].y);
+		
+		PtsDeControle[3].x -= dx*0.05;
+		PtsDeControle[3].y -= dy*0.05;
+		
+		glutPostRedisplay();
+	}
+
+	if (key == 'l') // rotaciona em sentido horario a velocidade V1
+	{
+
+	}
+
+	cout << key << " PRESSED" << endl;
+}
+
+//void mouseMoveEvent(int x, int y);
+
+void mouseClickEvent(int button, int state, int x, int y)
+{	
+	if(button == GLUT_LEFT_BUTTON)// && state == GLUT_DOWN) 
 	{
 		if (contPoints < 2)
 		{
@@ -184,53 +258,11 @@ void mouseClickEvent(int button, int state, int x, int y)
 				glColor3f(0.0, 0.0, 1.0);
 				
 				drawLine(PtsDeControle[0], PtsDeControle[1]);
-				calculateVelLine(PtsDeControle[0], PtsDeControle[1]);
+				calculateSpeedVectors(PtsDeControle[0], PtsDeControle[1]);
 			}
 		}
-
-		else
-		{
-			cout << "x: " << x << "\ty: " << y << endl;
-
-			if ((x >= PtsDeControle[2].x-2 && x <= PtsDeControle[2].x+2) && 
-				(y >= SCREEN_HEIGHT - PtsDeControle[2].y-2 && y <= SCREEN_HEIGHT - PtsDeControle[2].y+2))
-			{
-				cout << "V1 PRESSED" << endl;
-
-				glColor3f(0.0, 0.0, 1.0);
-
-				//cout << "old DOT = x: " << PtsDeControle[2].x << "\ty: " << PtsDeControle[2].y << endl;
-				//PtsDeControle[2].x += 4;
-				//PtsDeControle[2].y += 4;
-
-				//drawDot(PtsDeControle[2].x, PtsDeControle[2].y);
-
-				//cout << "new DOT = x: " << PtsDeControle[2].x << "\ty: " << PtsDeControle[2].y << endl;
-
-
-				for (double u = 0; u <= 1.0; u+=0.01)
-				{
-					drawHermiteCurve(PtsDeControle, u);
-					
-					drawLine(PtsDeControle[0], PtsDeControle[1]);
-					
-				}
-				//cout << "newest DOT = x: " << PtsDeControle[2].x << "\ty: " << PtsDeControle[2].y << endl;
-			}
-
-			else if ((x >= PtsDeControle[3].x-2 && x <= PtsDeControle[3].x+2) && 
-					(y >= SCREEN_HEIGHT - PtsDeControle[3].y-2 && y <= SCREEN_HEIGHT - PtsDeControle[3].y+2))
-			{
-				cout << "V2 PRESSED" << endl;
-			}
-		}
-
-		//cout << "SÓ SAIU DO IF AGORA ==========================================" << endl;
 	}
 }
-
-
-
 
 // Funções de cabeçalho.
 void Init()
@@ -247,6 +279,17 @@ void Init()
 void Display()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
+
+	drawDot(PtsDeControle[0].x, PtsDeControle[0].y);
+	drawDot(PtsDeControle[1].x, PtsDeControle[1].y);
+	drawDot(PtsDeControle[2].x, PtsDeControle[2].y);
+	drawDot(PtsDeControle[3].x, PtsDeControle[3].y);
+
+	drawLine(PtsDeControle[0], PtsDeControle[1]);
+
+	drawLineVector(PtsDeControle[0], PtsDeControle[2]);
+	drawLineVector(PtsDeControle[1], PtsDeControle[3]);
+
 	glFlush();
 }
 
@@ -257,9 +300,12 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(640,500);
 	glutInitWindowPosition(100,150);
 	glutCreateWindow("Hermite Curve");
-	glutMouseFunc(mouseClickEvent);
-	glutDisplayFunc(Display);
+
 	Init();
+	glutDisplayFunc(Display);
+	glutMouseFunc(mouseClickEvent);
+	glutKeyboardFunc(keyPressedEvent);
+
 	glutMainLoop();
 
 	return 0;
