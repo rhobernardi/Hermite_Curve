@@ -10,13 +10,17 @@ Now, pressing the keyboard keys "W A S D", the speed vector from P0 will be chan
 
 - COMPILATION
 
-To compile the code, there is a Makefile included, just go to the folder with the codes and type the command:
+To compile the code, open a terminal, go to the folder and type the command:
 	
-	$ make compile
+	$ g++ HermiteCurve.cpp -lglut -lGL -lGLEW -lGLU -o HermiteCurve
 
 **NOTE: make shure OpenGL 5.4 is configured correctly and all the libs used in the flags used in compilation are installed
 
 
-Now, just have to run the program, typing the command:
+Now, just have to run the program and follow the instructions above:
+
+	$ ./HermiteCurve
 	
-	$ make run
+There is a Makefile included that makes it easier, just go to the folder and type the command:
+
+	$ make
