@@ -4,15 +4,6 @@
 #include <math.h>
 
 
-using namespace std;
-
-int SCREEN_HEIGHT = 500;
-int nPts = 2; // Número de pontos da reta, P0 e P1.
-int N = nPts-1;
-int contPoints = 0;
-int HermiteMatrix[4][4];
-bool flag = false;
-
 //Classe "Point".
 class Point
 {
@@ -31,6 +22,17 @@ class Point
 		}
 };
 
+
+
+using namespace std;
+
+int SCREEN_HEIGHT = 500;
+int nPts = 2; // Número de pontos da reta, P0 e P1.
+int N = nPts-1;
+int contPoints = 0;
+int HermiteMatrix[4][4];
+int angl = 0;
+int flag = 0;
 Point PtsDeControle[4]; // [P0, P1, V0, V1]
 
 
@@ -125,17 +127,66 @@ void calculateSpeedVectors(Point p1, Point p2)
 	glutPostRedisplay();
 }
 
+void rotatePoint(Point eixo, Point *pt, int angl)
+{
+	float rmatrix[3][3];					// matriz de rotação 2D 3x3
+	float result[3], point[3];
 
-Point *partialResult(Point *PT)
+	result[0] = 0;
+	result[1] = 0;
+	result[2] = 0;
+
+	point[0] = pt->x;
+	point[1] = pt->y;
+	point[2] = 1;
+
+	rmatrix[0][0] = cos(angl);				// [ cos(a)  -sin(a)   0]
+	rmatrix[0][1] = sin(angl);				// [ sin(a)   cos(a)   0]
+	rmatrix[0][2] = 0;						// [ 0        0        1]
+	rmatrix[1][0] = -sin(angl);
+	rmatrix[1][1] = cos(angl);
+	rmatrix[1][2] = 0;
+	rmatrix[2][0] = 0;
+	rmatrix[2][1] = 0;
+	rmatrix[2][2] = 1;
+
+	//glTranslatef(-eixo.x, -eixo.y, 0);
+	
+	point[0] += -eixo.x;
+	point[1] += -eixo.y;
+	
+	for (int i = 0; i < 3; ++i)
+	{
+		for (int j = 0; j < 3; ++j)
+		{
+			result[i] += rmatrix[i][j]*point[j];
+		}
+	}
+
+	point[0] += eixo.x;
+	point[1] += eixo.y;
+
+	//glTranslatef(eixo.x, eixo.y, 0);, 
+
+	pt->x = result[0];
+	pt->y = result[1];
+
+	// fazer uma função que translada o vetor até a origem e rotaciona. a função deve usar matrizes de translação e rotação
+}
+
+Point *constResult(Point *PT)
 {
 	Point *result = (Point *) calloc(4,sizeof(Point));
+	float x = 0, y = 0;
 
 	for (int i = 0; i < 4; ++i)
 	{
 		for (int j = 0; j < 4; ++j)
 		{
-			result[i].x += HermiteMatrix[i][j]*PT[j].x;
-			result[i].y += HermiteMatrix[i][j]*PT[j].y;
+			x += HermiteMatrix[i][j]*PT[j].x;
+			y += HermiteMatrix[i][j]*PT[j].y;
+
+			result[j].setxy(x,y);
 		}
 	}
 
@@ -147,7 +198,7 @@ void drawHermiteCurve(Point *PT, double u)
 {
 	Point *P = (Point *) calloc(4, sizeof(Point));
 
-	Point *ParRes = partialResult(PT);
+	Point *ParRes = constResult(PT);
 
 	for (int k = 0; k < 4; ++k)
 	{
@@ -164,28 +215,31 @@ void drawHermiteCurve(Point *PT, double u)
 
 void keyPressedEvent(unsigned char key, int x, int y)
 {
-// V0 => velocidade de P0
+/*// V0 => velocidade de P0
 	if (key == 'w') // aumenta a velocidade V0
 	{
 		float dx = (float)abs(PtsDeControle[0].x - PtsDeControle[2].x);
 		float dy = (float)abs(PtsDeControle[0].y - PtsDeControle[2].y);
 		
-		PtsDeControle[2].x += dx*0.05;
-		PtsDeControle[2].y += dy*0.05;
-		
-		glutPostRedisplay();
+		PtsDeControle[2].setxy(PtsDeControle[2].x + dx*0.05, PtsDeControle[2].y + dy*0.05);
 	}
 
-	if (key == 'a') // rotaciona em sentido anti-horario a velocidade V0
+	if (key == 'a' && contPoints == 2) // rotaciona em sentido anti-horario a velocidade V0
 	{
-		//PtsDeControle[2].x += 3;
-		//PtsDeControle[2].y += 3;
+		//angl += 5;
+		//cout << "control[0].x: " << PtsDeControle[0].x << "control[1].x: " << PtsDeControle[1].x << "control[2].x: " << PtsDeControle[2].x << "control[3].x: " << PtsDeControle[3].x << endl;
+		//cout << "control[0].y: " << PtsDeControle[0].y << "control[1].y: " << PtsDeControle[1].y << "control[2].y: " << PtsDeControle[2].y << "control[3].y: " << PtsDeControle[3].y << endl;
+		
+		float dx = (float)abs(PtsDeControle[0].x - PtsDeControle[2].x);
+		float dy = (float)abs(PtsDeControle[0].y - PtsDeControle[2].y);
+		
+		angl += 45;
 
-		//glTranslated(PtsDeControle[0].x, PtsDeControle[0].y, 0);
-		//glRotatef(0.0f, 0.0f, 30.0f, 1.0f);
-		//glTranslated(-PtsDeControle[0].x, -PtsDeControle[0].y, 0);
+		//PtsDeControle[2].x = dx*sin(angl);
+		//PtsDeControle[2].y = dy*cos(angl);
+		//
+		rotatePoint(PtsDeControle[0], &PtsDeControle[2], angl);
 
-		glutPostRedisplay();
 	}
 
 	if (key == 's') // diminui a velocidade V0
@@ -193,65 +247,85 @@ void keyPressedEvent(unsigned char key, int x, int y)
 		float dx = (float)abs(PtsDeControle[0].x - PtsDeControle[2].x);
 		float dy = (float)abs(PtsDeControle[0].y - PtsDeControle[2].y);
 		
-		PtsDeControle[2].x -= dx*0.05;
-		PtsDeControle[2].y -= dy*0.05;
-
-		glutPostRedisplay();
+		PtsDeControle[2].setxy(PtsDeControle[2].x - dx*0.05, PtsDeControle[2].y - dy*0.05);
 	}
 
-	if (key == 'd') // rotaciona em sentido horario a velocidade V0
+	if (key == 'd' && contPoints == 2) // rotaciona em sentido horario a velocidade V0
 	{
-		
+		angl -= 5;
 	}
 
 
 // V0 => velocidade de P1
 	if (key == 'i') // aumenta a velocidade V1
 	{
-		float dx = (float)abs(PtsDeControle[0].x - PtsDeControle[2].x);
-		float dy = (float)abs(PtsDeControle[0].y - PtsDeControle[2].y);
+		float dx = (float)abs(PtsDeControle[0].x - PtsDeControle[3].x);
+		float dy = (float)abs(PtsDeControle[0].y - PtsDeControle[3].y);
 		
-		PtsDeControle[3].x += dx*0.05;
-		PtsDeControle[3].y += dy*0.05;
-		
-		glutPostRedisplay();
+		PtsDeControle[2].setxy(PtsDeControle[3].x - dx*0.05, PtsDeControle[3].y - dy*0.05);
 	}
 
-	if (key == 'j') // rotaciona em sentido anti-horario a velocidade V1
+	if (key == 'j' && contPoints == 2) // rotaciona em sentido anti-horario a velocidade V1
 	{
 
 	}
 
 	if (key == 'k') // diminui a velocidade V1
 	{
-		float dx = (float)abs(PtsDeControle[0].x - PtsDeControle[2].x);
-		float dy = (float)abs(PtsDeControle[0].y - PtsDeControle[2].y);
+		float dx = (float)abs(PtsDeControle[0].x - PtsDeControle[3].x);
+		float dy = (float)abs(PtsDeControle[0].y - PtsDeControle[3].y);
 		
-		PtsDeControle[3].x -= dx*0.05;
-		PtsDeControle[3].y -= dy*0.05;
-		
-		glutPostRedisplay();
+		PtsDeControle[2].setxy(PtsDeControle[3].x - dx*0.05, PtsDeControle[3].y - dy*0.05);
 	}
 
-	if (key == 'l') // rotaciona em sentido horario a velocidade V1
+	if (key == 'l' && contPoints == 2) // rotaciona em sentido horario a velocidade V1
 	{
 
 	}
+*/
+	if (key == 27) exit(0);
 
 	cout << key << " PRESSED" << endl;
+	glutPostRedisplay();
 }
 
-//void mouseMoveEvent(int x, int y);
+
+void mousePassEvent(int x, int y)
+{
+	//cout << "x:" << x << "\ty: " << SCREEN_HEIGHT - y << endl;
+	//cout << "CP[0].x: " << PtsDeControle[0].x << "\tCP[0].y: " << PtsDeControle[0].y << endl;
+	if (flag == 1)
+	{
+		PtsDeControle[1].setxy(x, SCREEN_HEIGHT - y);
+	}
+
+	if (flag == 2)
+	{
+		PtsDeControle[2].setxy(x, SCREEN_HEIGHT - y);
+	}
+
+	if (flag == 3)
+	{
+		PtsDeControle[3].setxy(x, SCREEN_HEIGHT - y);
+	}
+
+	glutPostRedisplay();
+}
+
 
 void mouseClickEvent(int button, int state, int x, int y)
 {	
-	if(button == GLUT_LEFT_BUTTON)// && state == GLUT_DOWN) 
+	if(button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
 	{
 		if (contPoints < 2)
 		{
 			PtsDeControle[contPoints].setxy((float) x, (float) (SCREEN_HEIGHT - y));
 			drawDot(x, SCREEN_HEIGHT - y);
 			contPoints++;
+
+			// ativa flag que desenha linha acompanhando o rastro do mouse
+			if(contPoints == 1)flag = 1;
+			else flag = 0;
 
 			if (contPoints == nPts)
 			{
@@ -260,6 +334,25 @@ void mouseClickEvent(int button, int state, int x, int y)
 				drawLine(PtsDeControle[0], PtsDeControle[1]);
 				calculateSpeedVectors(PtsDeControle[0], PtsDeControle[1]);
 			}
+		}
+
+		else if(flag != 0 && state == GLUT_DOWN) flag = 0;
+
+		else
+		{
+			if ((x >= PtsDeControle[2].x - 2 && x <= PtsDeControle[2].x + 2) && 
+				(y >= SCREEN_HEIGHT - PtsDeControle[2].y - 2 && y <= SCREEN_HEIGHT - PtsDeControle[2].y + 2) &&
+				state == GLUT_DOWN)
+			{
+				flag = 2;
+			}
+
+			else if ((x >= PtsDeControle[3].x - 2 && x <= PtsDeControle[3].x + 2) && 
+				(y >= SCREEN_HEIGHT - PtsDeControle[3].y - 2 && y <= SCREEN_HEIGHT - PtsDeControle[3].y + 2) &&
+				state == GLUT_DOWN)
+			{
+				flag = 3;
+			}			
 		}
 	}
 }
@@ -287,8 +380,11 @@ void Display()
 
 	drawLine(PtsDeControle[0], PtsDeControle[1]);
 
-	drawLineVector(PtsDeControle[0], PtsDeControle[2]);
-	drawLineVector(PtsDeControle[1], PtsDeControle[3]);
+	if(flag != 1)
+	{
+		drawLineVector(PtsDeControle[0], PtsDeControle[2]);
+		drawLineVector(PtsDeControle[1], PtsDeControle[3]);
+	}
 
 	glFlush();
 }
@@ -303,6 +399,7 @@ int main(int argc, char *argv[])
 
 	Init();
 	glutDisplayFunc(Display);
+	glutPassiveMotionFunc(mousePassEvent);
 	glutMouseFunc(mouseClickEvent);
 	glutKeyboardFunc(keyPressedEvent);
 
