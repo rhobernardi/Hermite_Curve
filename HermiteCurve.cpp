@@ -30,31 +30,8 @@ int SCREEN_HEIGHT = 500;
 int nPts = 2; // Número de pontos da reta, P0 e P1.
 int N = nPts-1;
 int contPoints = 0;
-int HermiteMatrix[4][4];
-int angl = 0;
 int flag = 0;
 Point PtsDeControle[4]; // [P0, P1, V0, V1]
-
-
-void loadHermiteMatrix()
-{
-	HermiteMatrix[0][0] =  1;
-	HermiteMatrix[0][1] =  0;
-	HermiteMatrix[0][2] = -3;
-	HermiteMatrix[0][3] =  2;
-	HermiteMatrix[1][0] =  0;			// [1   0  -3   2]
-	HermiteMatrix[1][1] =  0;			// [0   0   3  -2]
-	HermiteMatrix[1][2] =  3;			// [0   1  -2   1]
-	HermiteMatrix[1][3] = -2;			// [0   0  -1   1]
-	HermiteMatrix[2][0] =  0;
-	HermiteMatrix[2][1] =  1;
-	HermiteMatrix[2][2] = -2;
-	HermiteMatrix[2][3] =  1;
-	HermiteMatrix[3][0] =  0;
-	HermiteMatrix[3][1] =  0;
-	HermiteMatrix[3][2] = -1;
-	HermiteMatrix[3][3] =  1;
-}
 
 
 void drawDot(int x, int y)
@@ -107,17 +84,17 @@ void calculateSpeedVectors(Point p1, Point p2)
 
 	if (p1.x < p2.x) {
 		vx1 = (float)p1.x + (dx);
-		vx2 = (float)p2.x - (dx);
+		vx2 = (float)p2.x + (dx); // -
 	} else {
-		vx1 = (float)p1.x - (dx);
+		vx1 = (float)p1.x + (dx); // -
 		vx2 = (float)p2.x + (dx);
 	}
 
 	if (p1.y < p2.y) {
 		vy1 = (float)p1.y + (dy);
-		vy2 = (float)p2.y - (dy);
+		vy2 = (float)p2.y + (dy); // -
 	} else {
-		vy1 = (float)p1.y - (dy);
+		vy1 = (float)p1.y + (dy); // -
 		vy2 = (float)p2.y + (dy);
 	}
 
@@ -128,42 +105,21 @@ void calculateSpeedVectors(Point p1, Point p2)
 }
 
 
-Point *constResult(Point *PT)
-{
-	Point *result = (Point *) calloc(4,sizeof(Point));
-	float x = 0, y = 0;
-
-	for (int i = 0; i < 4; ++i)
-	{
-		for (int j = 0; j < 4; ++j)
-		{
-			x += HermiteMatrix[i][j]*PT[j].x;
-			y += HermiteMatrix[i][j]*PT[j].y;
-
-			result[j].setxy(x,y);
-		}
-	}
-
-	// for (int j = 0; j < 4; ++j)
-	// {
-	// 	cout << "[" << result[j].x << " " << result[j].y << "]" << endl;
-	// }
-
-	// exit(0);
-
-	return result;
-}
-
-
 Point calculateCurve(Point *PT, double u)
 {
+	Point P0, P1, V0, V1;
 	Point H;
 
-	H.x = PT[0].x*(2*pow(u, 3) -3* pow(u, 2) +1) + PT[1].x*(-2* pow(u, 3) + 3* pow(u,2)) + 
-			PT[2].x*(pow(u, 3) - 2* pow(u, 2) + u) + PT[3].x*(pow(u,3) - pow(u,2));
+	P0.setxy(PT[0].x, PT[0].y);
+	P1.setxy(PT[1].x, PT[1].y);
+	V0.setxy(PT[2].x, PT[2].y);
+	V1.setxy(PT[3].x, PT[3].y);
+
+	H.x = P0.x*(2*pow(u, 3) - 3* pow(u, 2) +1) + P1.x*(-2* pow(u, 3) + 3* pow(u,2)) + 
+			V0.x*(pow(u, 3) - 2* pow(u, 2) + u) + V1.x*(pow(u,3) - pow(u,2));
 	
-	H.y = PT[0].y*(2*pow(u, 3) -3* pow(u, 2) +1) + PT[1].y*(-2* pow(u, 3) + 3* pow(u,2)) + 
-			PT[2].y*(pow(u, 3) - 2* pow(u, 2) + u) + PT[3].y*(pow(u,3) - pow(u,2));
+	H.y = P0.y*(2*pow(u, 3) - 3* pow(u, 2) +1) + P1.y*(-2* pow(u, 3) + 3* pow(u,2)) + 
+			V0.y*(pow(u, 3) - 2* pow(u, 2) + u) + V1.y*(pow(u,3) - pow(u,2));
 
 	return H;
 }
@@ -177,7 +133,6 @@ void drawHermiteCurve(Point PT[])
 	{
 		paux2 = calculateCurve(PT, u);
 
-		//drawDot(paux1.x, paux1.y);
 		drawLine(paux1, paux2);
 
 		paux1 = paux2;
@@ -267,7 +222,6 @@ void Init()
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluOrtho2D(0.0, 640.0, 0.0, 500.0);
-	loadHermiteMatrix();
 }
 
 void Display()
@@ -301,7 +255,7 @@ int main(int argc, char *argv[])
 	glutInitWindowSize(640,500);
 	glutInitWindowPosition(100,150);
 	glutCreateWindow("Hermite Curve");
-
+	
 	Init();
 	glutDisplayFunc(Display);
 	glutPassiveMotionFunc(mousePassEvent);
